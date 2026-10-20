@@ -23,7 +23,7 @@
   #first strong { display: block; font-size: 36px; margin-bottom: 8px; }
   #first.gone, #game:has(canvas) ~ #first { display: none; }
 </style>
-  <script type="module" crossorigin src="./assets/index-CBtN2MlN.js"></script>
+  <script type="module" crossorigin src="./assets/index-DKbHCQfP.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#000000">
@@ -66,7 +66,7 @@
   function note(t) { errors.push(new Date().toLocaleTimeString() + '  ' + String(t).slice(0, 380)); if (errors.length > 12) errors.shift(); }
   addEventListener('error', function (e) { note((e.message || 'error') + (e.filename ? ' (' + e.filename.split('/').pop() + ':' + e.lineno + ')' : '')); });
   addEventListener('unhandledrejection', function (e) { note('Error: ' + ((e.reason && e.reason.message) || e.reason)); });
-  var TITLE = "Saltwind Ledger", TO = "", BUILD = "2026-10-20 21:01";
+  var TITLE = "Saltwind Ledger", TO = "", BUILD = "2026-10-20 21:54";
   // a picture of the game: read inside one of its own animation frames, while the drawing is still there
   function picture(done) {
     var c = [].slice.call(document.querySelectorAll('canvas')).sort(function (a, b) { return b.width * b.height - a.width * a.height; })[0];
@@ -244,7 +244,7 @@ if (!again) playIntro({ logo: "./ew-logo.svg" });
 <div id="ew-note" style="opacity:.7;font-size:13px">0%</div></div>
 <script>(function () {
   var box = document.getElementById('ew-loading'), bar = document.getElementById('ew-bar'), note = document.getElementById('ew-note');
-  var BUILD = "1792530106999", KEY = 'emberwick:ready:' + "ship-trading-game", before = null;
+  var BUILD = "1792533272743", KEY = 'emberwick:ready:' + "ship-trading-game", before = null;
   try { before = localStorage.getItem(KEY); } catch (e) {}
   if (before === BUILD) document.getElementById('ew-what').innerHTML = "Starting <b>Saltwind Ledger</b>";
   else if (before) document.getElementById('ew-what').innerHTML = "Installing the update for <b>Saltwind Ledger</b>";
