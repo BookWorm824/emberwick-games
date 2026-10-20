@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Saltwind Ledger</title>
+<link rel="icon" type="image/png" href="./assets/logo_title-DH3rYWJ6.png">
+<link rel="apple-touch-icon" href="./assets/logo_title-DH3rYWJ6.png">
+<style>
+  html, body { margin: 0; height: 100%; background: #173f49; overflow: hidden; }
+  #game { width: 100%; height: 100%; }
+  /* Only the game's own picture: anything the builder lays over the page (the Test menu) still scrolls. */
+  #game canvas { user-select: none; -webkit-user-select: none; touch-action: none; }
+  /* The game is a wide picture. A phone or tablet held upright is asked to turn; the note goes by itself when it does. */
+  #small { display: none; position: fixed; inset: 0; z-index: 10; background: #173f49; color: #fbefd2;
+    font: 18px/1.5 Palatino, 'Palatino Linotype', Georgia, serif; text-align: center; padding: 15vh 8vw 0; box-sizing: border-box; }
+  #small button { margin-top: 24px; font: inherit; padding: 10px 22px; border-radius: 10px; border: 3px solid #4a3221; background: #f0c552; color: #4a3221; }
+  @media (orientation: portrait) and (max-width: 900px) { #small:not(.gone) { display: block; } }
+  /* Shown from the first moment the page opens until the game draws its own loading card, so the screen
+     is never empty while the game's code is still arriving. */
+  #first { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: #167f91; z-index: 5; }
+  #first div { background: #f3e1bd; border: 3px solid #4a3221; border-radius: 20px; padding: 34px 70px; text-align: center;
+    color: #4a3221; font: 22px/1.6 Palatino, 'Palatino Linotype', Georgia, serif; }
+  #first strong { display: block; font-size: 36px; margin-bottom: 8px; }
+  #first.gone, #game:has(canvas) ~ #first { display: none; }
+</style>
+  <script type="module" crossorigin src="./assets/index-DB4_vPxH.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<link rel="manifest" href="./manifest.webmanifest">
+<meta name="theme-color" content="#000000">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<link rel="icon" type="image/png" href="./icon-192.png">
+<script>(function () {
+  if (!("serviceWorker" in navigator) || !/^https?:$/.test(location.protocol)) return;
+  // with a connection, a newer version is looked for at every start and every half hour of play; once it has been
+  // fetched the player is told and can restart into it (or keep playing and get it next time)
+  navigator.serviceWorker.register("./sw.js").then(function (reg) {
+    setInterval(function () { if (navigator.onLine) reg.update().catch(function () {}); }, 30 * 60000);
+  }).catch(function () {});
+  var had = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener("controllerchange", function () {
+    if (!had) { had = true; return; }
+    var u = document.createElement("div");
+    u.innerHTML = 'An update is ready. <button type="button" style="margin-left:10px;font:inherit;background:#f08a3c;color:#16110c;border:0;border-radius:99px;padding:4px 12px;cursor:pointer">Restart now</button> <button type="button" style="font:inherit;background:none;color:#aab3c2;border:0;cursor:pointer">Later</button>';
+    u.style.cssText = "position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:2147482001;background:rgba(22,26,33,.96);color:#e9ecf2;border:1px solid #2b3240;border-radius:99px;padding:6px 8px 6px 16px;font:14px system-ui,sans-serif";
+    u.querySelectorAll("button")[0].onclick = function () { location.reload(); };
+    u.querySelectorAll("button")[1].onclick = function () { u.remove(); };
+    (function show() { if (document.getElementById("ew-intro") || !document.body) return setTimeout(show, 500); document.body.appendChild(u); })();
+  });
+  // the pictures and sounds are saved in the background; each start carries on where the last one stopped
+  navigator.serviceWorker.ready.then(function (r) { if (r.active) r.active.postMessage({ emberwickFill: 1 }); }).catch(function () {});
+  navigator.serviceWorker.addEventListener("message", function (e) {
+    var v = e.data && e.data.emberwickOffline; if (!v) return;
+    try { if (localStorage.getItem("emberwick:offline") === v) return; localStorage.setItem("emberwick:offline", v); } catch (x) {}
+    var b = document.createElement("div");
+    b.textContent = "Saved on this device: it now plays without a connection.";
+    b.style.cssText = "position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:2147482000;background:rgba(22,26,33,.94);color:#e9ecf2;border:1px solid #2b3240;border-radius:99px;padding:8px 16px;font:14px system-ui,sans-serif;pointer-events:none;transition:opacity .6s";
+    (function show() { if (document.getElementById("ew-intro") || !document.body) return setTimeout(show, 500); document.body.appendChild(b); setTimeout(function () { b.style.opacity = "0"; }, 4000); setTimeout(function () { b.remove(); }, 4700); })();
+  });
+})();</script>
+</head>
+<body>
+<script>(function () {
+  var errors = [];
+  function note(t) { errors.push(new Date().toLocaleTimeString() + '  ' + String(t).slice(0, 380)); if (errors.length > 12) errors.shift(); }
+  addEventListener('error', function (e) { note((e.message || 'error') + (e.filename ? ' (' + e.filename.split('/').pop() + ':' + e.lineno + ')' : '')); });
+  addEventListener('unhandledrejection', function (e) { note('Error: ' + ((e.reason && e.reason.message) || e.reason)); });
+  var TITLE = "Saltwind Ledger", TO = "", BUILD = "2026-10-20 18:58";
+  // a picture of the game: read inside one of its own animation frames, while the drawing is still there
+  function picture(done) {
+    var c = [].slice.call(document.querySelectorAll('canvas')).sort(function (a, b) { return b.width * b.height - a.width * a.height; })[0];
+    if (!c) return done('');
+    // a page that is not drawing (hidden, or the game stopped) has no next frame: the window opens without a picture
+    // (then the canvas is read straight away, which works for a game drawn without WebGL; an empty picture is left out)
+    var sent = false, once = function (p) { if (!sent) { sent = true; done(p); } };
+    function grab() {
+      try {
+        var s = Math.min(1, 1280 / Math.max(c.width, c.height)), o = document.createElement('canvas'); o.width = Math.round(c.width * s); o.height = Math.round(c.height * s);
+        var g = o.getContext('2d'); g.drawImage(c, 0, 0, o.width, o.height);
+        var px = g.getImageData(0, 0, o.width, o.height).data, lit = 0;
+        for (var i = 0; i < px.length; i += 4 * 97) if (px[i] + px[i + 1] + px[i + 2] > 24) lit++;
+        return lit ? o.toDataURL('image/jpeg', 0.8) : '';
+      } catch (e) { return ''; }
+    }
+    setTimeout(function () { once(grab()); }, 400);
+    requestAnimationFrame(function () { once(grab()); });
+  }
+  window.emberwickReport = function () {
+    if (document.getElementById('ew-report')) return;
+    picture(function (pic) {
+      var box = document.createElement('div'); box.id = 'ew-report';
+      box.style.cssText = 'position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;background:rgba(5,7,11,.72);font:15px system-ui,sans-serif;color:#e9ecf2';
+      box.innerHTML = '<form style="width:min(92vw,460px);background:#141821;border:1px solid #2b3240;border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:10px">'
+        + '<strong style="font-size:18px">Report a problem</strong><span style="color:#909aac">What happened, and what were you doing just before? A picture of the screen goes along.</span>'
+        + '<textarea rows="5" required style="background:#0d1016;color:#e9ecf2;border:1px solid #2b3240;border-radius:8px;padding:9px;font:inherit;resize:vertical"></textarea>'
+        + (pic ? '<label style="display:flex;gap:8px;align-items:center;color:#909aac"><input type="checkbox" checked> Send the picture of the screen</label>' : '')
+        + '<div style="display:flex;gap:8px;justify-content:flex-end;align-items:center"><span data-say style="color:#909aac;margin-right:auto"></span><button type="button" style="background:transparent;border:1px solid #2b3240;border-radius:8px;padding:9px 14px;color:#e9ecf2;font:inherit;cursor:pointer">Cancel</button><button style="background:#ff8a5c;color:#1c0f08;border:0;border-radius:8px;padding:9px 16px;font:600 15px system-ui,sans-serif;cursor:pointer">Send</button></div></form>';
+      // the game must not take the typing as its own controls
+      ['keydown', 'keyup', 'keypress', 'pointerdown', 'mousedown', 'touchstart', 'wheel'].forEach(function (t) { box.addEventListener(t, function (e) { e.stopPropagation(); }); });
+      document.body.appendChild(box);
+      var text = box.querySelector('textarea'), say = box.querySelector('[data-say]'), keep = box.querySelector('input');
+      text.focus();
+      box.querySelector('button[type=button]').onclick = function () { box.remove(); };
+      box.querySelector('form').onsubmit = function (e) {
+        e.preventDefault();
+        var words = text.value.trim(); if (!words) return;
+        var info = { text: words, kind: 'problem', by: window.__emberwickTester || '', where: location.pathname + location.search, build: BUILD,
+          device: navigator.userAgent + ' · screen ' + screen.width + 'x' + screen.height + ' · window ' + innerWidth + 'x' + innerHeight, errors: errors.slice(), picture: keep && keep.checked ? pic : '' };
+        say.textContent = 'Sending…';
+        fetch('/__emberwick/report', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(info) }).then(function (r) {
+          if (!r.ok) throw new Error('not a test link');
+          say.textContent = 'Sent. Thank you!'; setTimeout(function () { box.remove(); }, 1200);
+        }).catch(function () {
+          // not on a test link: the report goes by email instead, written out
+          var body = words + '\n\n--\n' + TITLE + ', built ' + BUILD + '\n' + info.device + (errors.length ? '\n\nWhat went wrong in the game:\n' + errors.join('\n') : '') + (info.picture ? '\n\n(Please add a screenshot if you can.)' : '');
+          location.href = 'mailto:' + encodeURIComponent(TO) + '?subject=' + encodeURIComponent('Problem in ' + TITLE) + '&body=' + encodeURIComponent(body);
+          say.textContent = TO ? 'Your email app opens with the report written out. Press Send there.' : 'Your email app opens with the report written out.';
+        });
+      };
+    });
+  };
+})();</script>
+<script>(function () {
+// The Emberwick Games intro: the studio logo, animated, shown when a game starts.
+// The flame rises and flickers, embers drift up, the name is revealed from the middle with a shine passing over it, and
+// "GAMES" settles in underneath. About four and a half seconds; a click, a tap or any key skips it.
+//
+// It is plain HTML and CSS laid over the game, so it needs nothing from the game's own code. The builder's preview
+// loads it through game-bridge.js; exported games get this file's function written straight into their page
+// (server/export.mjs), so keep it free of imports and of anything that only works in a module.
+//
+// The logo is one picture whose shapes are grouped by color, not by part, so the two parts that move separately (the
+// flame emblem above, the name below) are the same picture shown twice, each cut to its own area.
+function playIntro(opts) {
+  opts = opts || {};
+  if (document.getElementById('ew-intro')) return;
+  var logo = opts.logo || '/app/brand/emberwick-logo-light.svg';
+  var still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // Where the emblem ends and the name begins. The line between them has a step in it, because the glow of the gem
+  // above the "W" reaches up beside the emblem and belongs to the name.
+  var EMBLEM = 'polygon(0 0,100% 0,100% 58%,62.5% 58%,62.5% 64.5%,0 64.5%)';
+  var NAME = 'polygon(62.5% 58%,100% 58%,100% 100%,0 100%,0 64.5%,62.5% 64.5%)';
+  var css = ''
+    + '#ew-intro{position:fixed;inset:0;z-index:100;overflow:hidden;display:flex;align-items:center;justify-content:center;cursor:pointer;'
+    + 'background:radial-gradient(ellipse at 50% 42%,#2a1608 0%,#150c0a 38%,#0a0708 78%);opacity:1;transition:opacity .6s ease}'
+    + '#ew-intro.ew-out{opacity:0}'
+    + '#ew-intro:not(.ew-go) *{animation-play-state:paused!important}'   // the screen is covered at once; the animation waits for the logo
+    + '#ew-intro .ew-box{position:relative;width:min(74vw,112vh,820px);aspect-ratio:3/2}'
+    + '#ew-intro img,#ew-intro .ew-shine{position:absolute;inset:0;width:100%;height:100%;display:block;user-select:none;-webkit-user-drag:none}'
+    + '#ew-intro .ew-glow{position:absolute;left:50%;top:31%;width:78%;aspect-ratio:1;transform:translate(-50%,-50%) scale(.3);border-radius:50%;opacity:0;'
+    + 'background:radial-gradient(circle,rgba(255,150,40,.42) 0%,rgba(255,90,10,.16) 38%,rgba(255,90,10,0) 66%);animation:ew-glow 1.3s .25s ease-out forwards,ew-pulse 2.1s 1.6s ease-in-out infinite}'
+    + '#ew-intro .ew-emblem{clip-path:' + EMBLEM + ';transform-origin:50% 58%;opacity:0;'
+    + 'animation:ew-rise 1.15s .3s cubic-bezier(.2,.85,.25,1.2) forwards,ew-flicker 1.7s 1.5s ease-in-out infinite}'
+    // the name is uncovered from the middle outwards: the frame around it opens, the picture inside keeps its own cut
+    + '#ew-intro .ew-wrap{position:absolute;inset:0;clip-path:inset(0 50% 0 50%);animation:ew-reveal .95s 1.2s cubic-bezier(.25,.7,.25,1) forwards}'
+    + '#ew-intro .ew-word{clip-path:' + NAME + '}'
+    + '#ew-intro .ew-shine{clip-path:' + NAME + ';-webkit-mask:url("' + logo + '") center/100% 100% no-repeat;mask:url("' + logo + '") center/100% 100% no-repeat;'
+    + 'background:linear-gradient(105deg,rgba(255,255,255,0) 42%,rgba(255,255,255,.9) 50%,rgba(255,255,255,0) 58%) no-repeat;background-size:260% 100%;background-position:130% 0;animation:ew-shine 1.1s 2.15s ease-in-out forwards}'
+    + '#ew-intro .ew-games{position:absolute;left:0;right:0;top:92%;display:flex;align-items:center;justify-content:center;gap:2.2%;opacity:0;'
+    + 'color:#fef4d8;font:600 clamp(13px,2.5vw,27px) Georgia,"Palatino Linotype","Book Antiqua",serif;letter-spacing:1.3em;text-indent:1.3em;text-shadow:0 0 18px rgba(255,140,40,.55);'
+    + 'animation:ew-games .9s 2.05s cubic-bezier(.2,.7,.25,1) forwards}'
+    + '#ew-intro .ew-games i{display:block;height:1px;width:16%;background:linear-gradient(90deg,rgba(254,183,2,0),rgba(254,183,2,.9))}'
+    + '#ew-intro .ew-games i:last-child{transform:scaleX(-1)}'
+    + '#ew-intro .ew-ember{position:absolute;bottom:62%;border-radius:50%;background:#ffc468;box-shadow:0 0 8px 2px rgba(255,120,20,.8);opacity:0;animation:ew-ember linear infinite}'
+    + '#ew-intro .ew-skip{position:absolute;left:0;right:0;bottom:3.5%;text-align:center;color:rgba(254,244,216,.38);font:12px system-ui,sans-serif;letter-spacing:.06em;opacity:0;animation:ew-fade .8s 2.4s forwards}'
+    + '@keyframes ew-rise{0%{opacity:0;transform:translateY(7%) scale(.5,.18)}45%{opacity:1}70%{transform:translateY(0) scale(1.05,1.09)}100%{opacity:1;transform:none}}'
+    + '@keyframes ew-flicker{0%,100%{transform:none;filter:brightness(1)}18%{transform:scale(1.006,.99) skewX(.25deg);filter:brightness(1.07)}36%{transform:scale(.996,1.012);filter:brightness(.97)}'
+    + '57%{transform:scale(1.008,.994) skewX(-.3deg);filter:brightness(1.09)}78%{transform:scale(.998,1.008);filter:brightness(1.02)}}'
+    + '@keyframes ew-glow{to{opacity:1;transform:translate(-50%,-50%) scale(1)}}'
+    + '@keyframes ew-pulse{0%,100%{opacity:1}50%{opacity:.72}}'
+    + '@keyframes ew-reveal{to{clip-path:inset(0 0 0 0)}}'
+    + '@keyframes ew-shine{to{background-position:-30% 0}}'
+    + '@keyframes ew-games{to{opacity:1;letter-spacing:.62em;text-indent:.62em}}'
+    + '@keyframes ew-fade{to{opacity:1}}'
+    + '@keyframes ew-ember{0%{opacity:0;transform:translate(0,0) scale(1)}12%{opacity:1}100%{opacity:0;transform:translate(var(--dx),-46vh) scale(.3)}}'
+    // for players who have asked their device for less motion: the finished logo simply fades in
+    + '#ew-intro.ew-still .ew-emblem,#ew-intro.ew-still .ew-glow{animation:ew-fade .8s forwards;transform:none}#ew-intro.ew-still .ew-glow{transform:translate(-50%,-50%)}'
+    + '#ew-intro.ew-still .ew-wrap{clip-path:none;opacity:0;animation:ew-fade .8s .2s forwards}'
+    + '#ew-intro.ew-still .ew-shine,#ew-intro.ew-still .ew-ember{display:none}#ew-intro.ew-still .ew-games{letter-spacing:.62em;text-indent:.62em;animation:ew-fade .8s .5s forwards}';
+
+  var root = document.createElement('div');
+  root.id = 'ew-intro';
+  if (still) root.className = 'ew-still';
+  root.setAttribute('role', 'img');
+  root.setAttribute('aria-label', 'Emberwick Games');
+  root.innerHTML = '<style>' + css + '</style><div class="ew-box"><div class="ew-glow"></div><img class="ew-emblem" alt=""><div class="ew-wrap"><img class="ew-word" alt=""><div class="ew-shine"></div></div>'
+    + '<div class="ew-games"><i></i><span>GAMES</span><i></i></div></div><div class="ew-skip">' + ('ontouchstart' in window ? 'Tap to skip' : 'Click or press any key to skip') + '</div>';
+
+  // embers drifting up from the flame
+  var box = root.querySelector('.ew-box');
+  for (var n = 0; n < 20; n++) {
+    var e = document.createElement('span'), size = 2 + Math.random() * 4.5;
+    e.className = 'ew-ember';
+    e.style.cssText = 'left:' + (36 + Math.random() * 28) + '%;width:' + size + 'px;height:' + size + 'px;--dx:' + (Math.random() * 16 - 8) + 'vw;animation-duration:' + (2.2 + Math.random() * 2) + 's;animation-delay:' + (0.5 + Math.random() * 3.2) + 's';
+    box.appendChild(e);
+  }
+
+  var done = false, timer = 0;
+  function finish(fast) {
+    if (done) return;
+    done = true;
+    clearTimeout(timer);
+    window.removeEventListener('keydown', skip, true);
+    root.style.transitionDuration = fast ? '.25s' : '.6s';
+    root.className += ' ew-out';
+    setTimeout(function () { root.remove(); if (opts.onDone) opts.onDone(); }, fast ? 260 : 620);
+  }
+  function skip(ev) { if (ev && ev.type === 'keydown') { ev.stopPropagation(); ev.preventDefault(); } finish(true); }
+  root.addEventListener('pointerdown', function (ev) { ev.stopPropagation(); finish(true); });
+  window.addEventListener('keydown', skip, true);
+
+  // The dark screen goes up at once, so nothing of the game shows through; the animation starts when the logo has arrived.
+  (document.body || document.documentElement).appendChild(root);
+  var imgs = root.querySelectorAll('img'), ready = 0, started = false;
+  function start() {
+    if (started || done) return;
+    started = true;
+    root.className += ' ew-go';
+    timer = setTimeout(function () { finish(false); }, still ? 2600 : (opts.duration || 4600));
+  }
+  for (var i = 0; i < imgs.length; i++) {
+    imgs[i].onload = function () { if (++ready === imgs.length) start(); };
+    imgs[i].onerror = function () { finish(true); };   // no logo, no intro
+    imgs[i].src = logo;
+  }
+  setTimeout(start, 2500);
+}
+
+var again = false; try { again = !!sessionStorage.getItem("emberwick:no-intro"); sessionStorage.removeItem("emberwick:no-intro"); } catch (e) {}
+if (!again) playIntro({ logo: "./ew-logo.svg" });
+})();</script>
+
+<div id="game"></div>
+<div id="first" aria-live="polite"><div><strong>Saltwind Ledger</strong>Hoisting the sails…</div></div>
+<div id="small" role="dialog" aria-label="Turn your screen sideways">
+  <strong>Saltwind Ledger</strong> is a wide picture.<br>
+  Turn your phone or tablet on its side to play.<br>
+  <button type="button" onclick="document.getElementById('small').classList.add('gone')">Play upright anyway</button>
+</div>
+<div id="ew-loading" style="position:fixed;inset:0;z-index:99;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:#0e1116;color:#e8eaf0;font:17px system-ui,sans-serif;text-align:center">
+<div id="ew-what">Installing <b>Saltwind Ledger</b></div>
+<div style="width:min(64vw,380px);height:10px;border-radius:5px;background:#262c38;overflow:hidden"><i id="ew-bar" style="display:block;height:100%;width:2%;background:#ff8a5c;transition:width .25s"></i></div>
+<div id="ew-note" style="opacity:.7;font-size:13px">0%</div></div>
+<script>(function () {
+  var box = document.getElementById('ew-loading'), bar = document.getElementById('ew-bar'), note = document.getElementById('ew-note');
+  var BUILD = "1792522711942", KEY = 'emberwick:ready:' + "ship-trading-game", before = null;
+  try { before = localStorage.getItem(KEY); } catch (e) {}
+  if (before === BUILD) document.getElementById('ew-what').innerHTML = "Starting <b>Saltwind Ledger</b>";
+  else if (before) document.getElementById('ew-what').innerHTML = "Installing the update for <b>Saltwind Ledger</b>";
+  var total = 0, seen = {}, count = 0, last = 0;
+  try { performance.setResourceTimingBufferSize(3000); } catch (e) {}
+  fetch('assets/manifest.json').then(function (r) { return r.json(); }).then(function (list) { total = list.filter(function (a) { return a && a.file; }).length; }).catch(function () {});
+  function done() { clearInterval(timer); if (box) { box.remove(); box = null; } try { localStorage.setItem(KEY, BUILD); } catch (e) {} }
+  var timer = setInterval(function () {
+    performance.getEntriesByType('resource').forEach(function (r) {
+      if (r.name.indexOf('/assets/') < 0 || /manifest\.json|\.js(\?|$)/.test(r.name) || seen[r.name]) return;
+      seen[r.name] = 1; count++; last = Date.now();
+    });
+    // the quiet clock only starts once the game itself is running (its code can take a while to arrive)
+    if (!last && document.querySelector('canvas')) last = Date.now();
+    var quiet = last ? Date.now() - last : 0;
+    if (total) {
+      var p = Math.min(100, Math.round(count / total * 100));
+      bar.style.width = Math.max(2, p) + '%';
+      note.textContent = p + '%';
+      if (count >= total) return setTimeout(done, 300);
+    }
+    // nothing to count, or the game loads its files some other way: step aside once it has clearly started
+    if (quiet > (total ? 30000 : 2500)) done();
+  }, 250);
+})();</script>
+</body>
+</html>
