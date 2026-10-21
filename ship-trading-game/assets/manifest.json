@@ -1682,5 +1682,82 @@
     "description": "A solid towering wall of cool white fog fills the upper two-thirds of a framed sea-event illustration, with calm silver-blue water below and one wide warm golden lighthouse beam from behind the viewer opening a narrow channel through the center of the fog; only fog banks at the left and right edges, open water along the bottom, no visible sun, sunset, cliffs, islands, buildings, ships, people, or text, in the game's soft hand-painted storybook style.",
     "model": "chatgpt",
     "libraryId": "img-mvgq2qqlmdg"
+  },
+  {
+    "key": "portrait_osric",
+    "type": "image",
+    "file": "assets/portrait_osric.png",
+    "width": 512,
+    "height": 511,
+    "kind": "character",
+    "description": "close-up portrait showing only the head and shoulders, the face filling most of the picture, of a neat quiet man of forty, a counting-house clerk turned sea captain, with cropped dark hair, a plain gray coat, a pen behind one ear and an honest tired smile",
+    "model": "chatgpt",
+    "libraryId": "img-mvhctrd6ef9"
+  },
+  {
+    "key": "portrait_dove",
+    "type": "image",
+    "file": "assets/portrait_dove.png",
+    "width": 512,
+    "height": 512,
+    "kind": "character",
+    "description": "close-up portrait showing only the head and shoulders, the face filling most of the picture, of a steady young woman sailor, a lighthouse keeper's granddaughter, with dark skin, close-cropped hair, a yellow oilskin coat and a small brass lantern charm on a cord",
+    "model": "chatgpt",
+    "libraryId": "img-mvhcttuzqky"
+  },
+  {
+    "key": "portrait_juniper",
+    "type": "image",
+    "file": "assets/portrait_juniper.png",
+    "width": 497,
+    "height": 512,
+    "kind": "character",
+    "description": "close-up portrait showing only the head and shoulders, the face filling most of the picture, of a cheerful young woman cooper's daughter with freckles, red hair in two short braids, a rolled-sleeve linen shirt and a small barrel-hoop bracelet",
+    "model": "chatgpt",
+    "libraryId": "img-mvhctz3zp05"
+  },
+  {
+    "key": "portrait_ines",
+    "type": "image",
+    "file": "assets/portrait_ines.png",
+    "width": 512,
+    "height": 512,
+    "kind": "character",
+    "description": "close-up portrait showing only the head and shoulders, the face filling most of the picture, of a sharp elegant middle-aged woman spice buyer with gray-streaked black hair pinned up, a saffron and crimson shawl, gold earrings and a small spice box held up in one hand",
+    "model": "chatgpt",
+    "libraryId": "img-mvhcv3sx8pp"
+  },
+  {
+    "key": "portrait_rook",
+    "type": "image",
+    "file": "assets/portrait_rook.png",
+    "width": 512,
+    "height": 512,
+    "kind": "character",
+    "description": "close-up portrait showing only the head and shoulders, the face filling most of the picture, of a grinning young man fisherman with sun-bleached shaggy hair, a sunburnt nose, a striped jersey and a fishing float on a string round his neck",
+    "model": "chatgpt",
+    "libraryId": "img-mvhcv5np5kj"
+  },
+  {
+    "key": "portrait_finch",
+    "type": "image",
+    "file": "assets/portrait_finch.png",
+    "width": 512,
+    "height": 512,
+    "kind": "character",
+    "description": "close-up portrait showing only the head and shoulders, the face filling most of the picture, of an eager boy of sixteen, a cabin boy just made captain, with a mop of brown hair, a too-big navy coat with the cuffs rolled, and a proud wide grin",
+    "model": "chatgpt",
+    "libraryId": "img-mvhcv6m92yl"
+  },
+  {
+    "key": "portrait_hal",
+    "type": "image",
+    "file": "assets/portrait_hal.png",
+    "width": 512,
+    "height": 510,
+    "kind": "character",
+    "description": "close-up portrait showing only the head and shoulders, the face filling most of the picture, of a calm older man retired harbor pilot with a white mustache, a weathered brown pea coat, a knitted gray cap",
+    "model": "chatgpt",
+    "libraryId": "img-mvhcosl73k5"
   }
 ]
